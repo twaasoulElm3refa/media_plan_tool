@@ -153,7 +153,7 @@ def process_job(payload: StartPayload):
 # =========================
 @app.on_event("startup")
 def startup():
-    ensure_results_table()
+    get_db_connection()
 
 @app.get("/health")
 def health():
@@ -189,5 +189,6 @@ def get_result(req: ResultRequest):
         return {"status": "processing"}
 
     return {"status": "done", "result": row["edited_result"] or row["result"]}
+
 
 
