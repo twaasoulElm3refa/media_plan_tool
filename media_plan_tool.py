@@ -1,98 +1,73 @@
-
 import os
 import json
 from typing import Optional
 from datetime import datetime
+
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
+from openai import OpenAI
 
-# === Import DB helpers from separate module ===
+# === DB helpers from your separate file ===
 from database import (
-    get_db_connection,
+    ensure_results_table,
     fetch_latest_result,
     save_result,
 )
 
+# ---- env & OpenAI ----
 load_dotenv()
-app = FastAPI()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # =========================
-# 1) Try to import your function
+# 1) media_plan implementation (uses OpenAI)
 # =========================
-try:
-    def media_plan(data, emergency_plan= None):
-      if emergency_plan==None:
-          prompt=f'''أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.
-              1. الهدف الإعلامي
-              2. الجمهور المستهدف
-              3. الرسائل المفتاحية
-              4. المنصات المقترحة
-              5. أنواع المحتوى (منشورات – فيديو – إنفوجرافيك – تقارير – مقالات)
-              6. الجدول الزمني (تقسيم زمني واضح بالأسابيع أو الأشهر)
-              7. المؤشرات الرقمية المستهدفة (نسبة تفاعل، عدد زيارات، زيادة متابعين، إلخ)
-              8. الموازنة التقديرية (حسب خيارات المستخدم)
-              9. التوصيات العامة (مثل: التعاون مع مؤثرين – حملات ممولة – تحسين البروفايل)
-              '''
-      else:
-          prompt=f'''أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.
-              1. الهدف الإعلامي
-              2. الجمهور المستهدف
-              3. الرسائل المفتاحية
-              4. المنصات المقترحة
-              5. أنواع المحتوى (منشورات – فيديو – إنفوجرافيك – تقارير – مقالات)
-              6. الجدول الزمني (تقسيم زمني واضح بالأسابيع أو الأشهر)
-              7. المؤشرات الرقمية المستهدفة (نسبة تفاعل، عدد زيارات، زيادة متابعين، إلخ)
-              8. الموازنة التقديرية (حسب خيارات المستخدم)
-              9. التوصيات العامة (مثل: التعاون مع مؤثرين – حملات ممولة – تحسين البروفايل)
-              10. خطة طوارئ أو إدارة أزمة (اختياري)
-              '''
-          
-      new_data= f'''أنشئ خطة إعلامية مدفوعة تفصيلية قابلة للتنفيذ بناءً على البيانات التالية :{data}
-      راعي هذه النقاط 
-      كيف تعزز الـ Prompt ليعالج هذه الفجوات:
-  
-      عشان تخرج خطة مثل اللي تتصورها، لازم توضح في الـ Prompt أن المطلوب إلزاميًا يتضمن:
-      
-      جدول Placement كامل: Platform | Market (مدينة) | Section/Target | Language | Estimated Impressions | Actual Net Cost | Demographics | Interests/Behaviors | Duration (أيام).
-      
-      Event Phasing: (قبل / أثناء / بعد الحدث) مع أهداف وميزانية لكل مرحلة.
-      
-      LinkedIn Job Titles: أدرج بعض مسمى وظيفي.
-      
-      Channel-level Targets: Leads / Clicks / ROAS لكل قناة في مرحلة Conversion.
-      
-      Geo Split + Language Split: توزيع الميزانية حسب المدن واللغات.
-      
-      Google & TikTok: تضمينها كجزء من funnel strategy.
-      
-      Ops Recommendations: Facebook–Instagram integration + WhatsApp Remarketing.
-      
-      KPI by Channel: CPM / CTR / VTR / CPC / CPA / ROAS (قيم مستهدفة رقمية).
-      
-      3D Budget Matrix: (فئة × قناة × Funnel).
-      
-      Cadence: مدة Placement بالأيام + Creative Refresh كل 10–14 يوم.
-      
-      Bidding Strategy: Lowest-Cost كبداية ثم Cost Cap.
-      
-   '''
-      response = client.chat.completions.create(
-          model="gpt-4o",
-          messages=[
-              {"role": "system", "content":prompt },
-              {"role": "user", "content":new_data },
-          ],
-      )
-      return response.choices[0].message.content
-except Exception:
-    def media_plan(data, emergency_plan=None):
-        return (
-            "نتيجة تجريبية (Stub) — لم يتم استيراد media_plan الحقيقية.\n\n"
-            f"emergency_plan={emergency_plan}\n"
-            f"data keys: {list(data.keys())}"
+def media_plan(data, emergency_plan=None):
+    if emergency_plan is None:
+        prompt = (
+            "أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.\n"
+            "قدّم خطة تتضمن: "
+            "1) الهدف الإعلامي، 2) الجمهور المستهدف، 3) الرسائل المفتاحية، "
+            "4) المنصات المقترحة، 5) أنواع المحتوى، 6) الجدول الزمني، "
+            "7) المؤشرات الرقمية المستهدفة، 8) الموازنة التقديرية، 9) التوصيات العامة."
         )
+    else:
+        prompt = (
+            "أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.\n"
+            "قدّم خطة تتضمن: "
+            "1) الهدف الإعلامي، 2) الجمهور المستهدف، 3) الرسائل المفتاحية، "
+            "4) المنصات المقترحة، 5) أنواع المحتوى، 6) الجدول الزمني، "
+            "7) المؤشرات الرقمية المستهدفة، 8) الموازنة التقديرية، "
+            "9) التوصيات العامة، 10) خطة طوارئ أو إدارة أزمة."
+        )
+
+    new_data = (
+        "أنشئ خطة إعلامية مدفوعة تفصيلية قابلة للتنفيذ بناءً على البيانات التالية:\n"
+        f"{data}\n\n"
+        "إلزامي تضمين:\n"
+        "- جدول Placement: Platform | Market | Section/Target | Language | Estimated Impressions | "
+        "Actual Net Cost | Demographics | Interests/Behaviors | Duration (أيام)\n"
+        "- Event Phasing: قبل/أثناء/بعد مع أهداف وميزانية لكل مرحلة\n"
+        "- LinkedIn Job Titles\n"
+        "- Channel-level Targets: Leads/Clicks/ROAS\n"
+        "- Geo + Language Split\n"
+        "- تضمين Google & TikTok ضمن funnel\n"
+        "- Ops Recommendations: Facebook–Instagram + WhatsApp Remarketing\n"
+        "- KPI by Channel: CPM/CTR/VTR/CPC/CPA/ROAS بأرقام مستهدفة\n"
+        "- 3D Budget Matrix: فئة × قناة × Funnel\n"
+        "- Cadence: مدة Placement + Creative Refresh كل 10–14 يوم\n"
+        "- Bidding Strategy: Lowest-Cost ثم Cost Cap\n"
+    )
+
+    resp = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": new_data},
+        ],
+    )
+    return resp.choices[0].message.content
 
 # =========================
 # 2) Config
@@ -100,12 +75,12 @@ except Exception:
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 # =========================
-# 3) Schemas
+# 3) Schemas (Pydantic v1)
 # =========================
 class StartPayload(BaseModel):
     request_id: int = Field(..., description="ID created by WordPress insert")
     user_id: int
-  
+
     organization_name: Optional[str] = None
     media_campaign_name: Optional[str] = None
     type_of_entity: Optional[str] = None
@@ -118,7 +93,7 @@ class StartPayload(BaseModel):
     campaign_duration: Optional[str] = None
     start_date: Optional[str] = None  # YYYY-MM-DD
     end_date: Optional[str] = None
-    platforms: Optional[str] = None  # CSV as sent by WP
+    platforms: Optional[str] = None   # CSV from WP
     tone_of_speech: Optional[str] = None
     content_language: Optional[str] = None
     visual_identity: Optional[int] = 0
@@ -153,16 +128,15 @@ app.add_middleware(
 # =========================
 def process_job(payload: StartPayload):
     """
-    Run the heavy media_plan() then store into DB.
+    Run media_plan() then store into DB.
     """
     try:
-        plan_text = media_plan(payload.model_dump(), emergency_plan=payload.emergency_plan)
+        # Pydantic v1:
+        plan_text = media_plan(payload.dict(), emergency_plan=payload.emergency_plan)
         if not isinstance(plan_text, str):
             plan_text = json.dumps(plan_text, ensure_ascii=False)
-
         save_result(request_id=payload.request_id, user_id=payload.user_id, result_text=plan_text)
     except Exception as e:
-        # In production, log properly (Sentry/Cloud logs)
         print("process_job error:", repr(e))
 
 # =========================
@@ -180,8 +154,8 @@ def health():
 def start_job(payload: StartPayload, bg: BackgroundTasks):
     """
     Accepts WordPress payload + request_id.
-    Kicks off background processing and immediately returns "processing".
-    If already exists, returns "done".
+    Kicks off background processing and immediately returns 'processing'.
+    If already exists, returns 'done'.
     """
     if payload.request_id <= 0 or payload.user_id <= 0:
         raise HTTPException(status_code=400, detail="request_id and user_id are required and must be > 0")
@@ -196,8 +170,7 @@ def start_job(payload: StartPayload, bg: BackgroundTasks):
 @app.post("/result", response_model=ApiStatus)
 def get_result(req: ResultRequest):
     """
-    WordPress polls with {request_id}.
-    Returns processing/done.
+    WordPress polls with {request_id}. Returns processing/done.
     """
     if req.request_id <= 0:
         raise HTTPException(status_code=400, detail="request_id is required and must be > 0")
