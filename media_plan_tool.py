@@ -126,7 +126,7 @@ app.add_middleware(
 # =========================
 # 5) Background processor
 # =========================
-def process_job(payload: StartPayload):
+'''def process_job(payload: StartPayload):
     """
     Run media_plan() then store into DB.
     """
@@ -137,7 +137,16 @@ def process_job(payload: StartPayload):
             plan_text = json.dumps(plan_text, ensure_ascii=False)
         save_result(request_id=payload.request_id, user_id=payload.user_id, result_text=plan_text)
     except Exception as e:
+        print("process_job error:", repr(e))'''
+def process_job(payload: StartPayload):
+    try:
+        plan_text = media_plan(payload.model_dump(), emergency_plan=payload.emergency_plan)
+        if not isinstance(plan_text, str):
+            plan_text = json.dumps(plan_text, ensure_ascii=False)
+        save_result(request_id=payload.request_id, user_id=payload.user_id, result_text=plan_text)
+    except Exception as e:
         print("process_job error:", repr(e))
+
 
 # =========================
 # 6) Routes
@@ -180,3 +189,4 @@ def get_result(req: ResultRequest):
         return {"status": "processing"}
 
     return {"status": "done", "result": row["edited_result"] or row["result"]}
+
