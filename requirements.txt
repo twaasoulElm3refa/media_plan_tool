@@ -6,5 +6,3 @@ python-dotenv
 mysql-connector-python
 #PyMySQL==1.1.1
 #fastapi==0.95.2
-
-
