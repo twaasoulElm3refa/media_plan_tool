@@ -45,7 +45,7 @@ def save_result(request_id: int, user_id: int, result_text: str) -> None:
             cur.execute(sql, (request_id, user_id, result_text, None))
             conn.commit()
     finally:
-        cursor.close()
+        conn.commit()  # Ensure any pending changes are committed
         conn.close()
 
 def fetch_latest_result(request_id: int) -> Optional[Dict[str, Any]]:
@@ -67,6 +67,7 @@ def fetch_latest_result(request_id: int) -> Optional[Dict[str, Any]]:
             row = cur.fetchone()
             return row
     finally:
-        cur.close()
+        conn.commit()  # Ensure any pending changes are committed
         conn.close()
+
 
