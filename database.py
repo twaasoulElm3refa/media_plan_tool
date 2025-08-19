@@ -10,11 +10,11 @@ load_dotenv()  # يبحث عن .env في مجلد المشروع الحالي
 # =========================
 # Environment / Config
 # =========================
-db_host = os.getenv("db_host")
-db_port = os.getenv("db_port")
-db_user = os.getenv("db_user")
-db_password = os.getenv("db_password")
-db_name = os.getenv("db_name")
+db_name = os.getenv("DB_NAME")
+db_host = os.getenv("DB_HOST")
+db_user = os.getenv("DB_USER")
+db_password = os.getenv("DB_PASSWORD")
+db_port = os.getenv("DB_PORT")
 RESULTS_TABLE = "wpl3_media_plan_result"
 
 def get_db_connection():
@@ -69,3 +69,4 @@ def fetch_latest_result(request_id: int) -> Optional[Dict[str, Any]]:
     finally:
         cur.close()
         conn.close()
+
