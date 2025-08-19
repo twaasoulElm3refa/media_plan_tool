@@ -11,7 +11,7 @@ from openai import OpenAI
 
 # === DB helpers from your separate file ===
 from database import (
-    ensure_results_table,
+    get_db_connection,
     fetch_latest_result,
     save_result,
 )
@@ -189,4 +189,5 @@ def get_result(req: ResultRequest):
         return {"status": "processing"}
 
     return {"status": "done", "result": row["edited_result"] or row["result"]}
+
 
