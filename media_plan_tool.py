@@ -24,6 +24,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # 1) media_plan implementation (uses OpenAI)
 # =========================
 def media_plan(data, emergency_plan=False):
+    print(data)
     if emergency_plan is False:
         prompt = (
             "أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.\n"
@@ -179,6 +180,7 @@ def get_result(req: ResultRequest):
         return {"status": "processing"}
 
     return {"status": "done", "result": row["edited_result"] or row["result"]}
+
 
 
 
