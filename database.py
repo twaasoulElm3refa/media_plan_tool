@@ -37,26 +37,19 @@ def get_db_connection():
 
 def save_result(request_id: int, user_id: int, result_text: str) -> None:
     sql = f"""
-    INSERT INTO `{RESULTS_TABLE}` (`request_id`, `user_id`, `result`, `edited_result`,)
+    INSERT INTO `{RESULTS_TABLE}` (`request_id`, `user_id`, `result`, `edited_result`)
     VALUES (%s, %s, %s, %s)
     """
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute(sql, (
-                request_id, 
-                user_id, 
-                result_text, 
-            ))
+            cur.execute(sql, (request_id, user_id, result_text, None))
             conn.commit()
+            print("Data saved successfully")  # Debugging print
     finally:
         conn.close()
 
-
 def fetch_latest_result(request_id: int) -> Optional[Dict[str, Any]]:
-    """
-    Return the most recent result for a given request_id, or None.
-    """
     sql = f"""
     SELECT request_id, user_id, result, edited_result, date
     FROM `{RESULTS_TABLE}`
@@ -68,11 +61,8 @@ def fetch_latest_result(request_id: int) -> Optional[Dict[str, Any]]:
     try:
         with conn.cursor() as cur:
             cur.execute(sql, (request_id,))
-            row = cur.fetchone()  # Fetch the first row
-            cur.fetchall()  # Consume any remaining results
+            row = cur.fetchone()
+            print("Fetched result:", row)  # Debugging print
             return row
     finally:
-        conn.close()  # Close the connection after fetching results
-
-
-
+        conn.close()
