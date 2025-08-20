@@ -85,7 +85,8 @@ class StartPayload(BaseModel):
     media_campaign_name: Optional[str] = None
     type_of_entity: Optional[str] = None
     target_sector: Optional[str] = None
-    target_age: Optional[int] = None
+    target_age_start: Optional[int] = None
+    target_age_end: Optional[int] = None
     target_geographic_location: Optional[str] = None
     interests: Optional[str] = None
     goals: Optional[str] = None
@@ -189,3 +190,4 @@ def get_result(req: ResultRequest):
         return {"status": "processing"}
 
     return {"status": "done", "result": row["edited_result"] or row["result"]}
+
