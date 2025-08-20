@@ -36,19 +36,22 @@ def get_db_connection():
         return None
 
 def save_result(request_id: int, user_id: int, result_text: str) -> None:
-    # Assuming the 'edited_result' can be empty initially and should not be NULL
-    edited_result = ""  # or some default value for 'edited_result'
     sql = f"""
-    INSERT INTO `{RESULTS_TABLE}` (`request_id`, `user_id`, `result`, `edited_result`)
+    INSERT INTO `{RESULTS_TABLE}` (`request_id`, `user_id`, `result`, `edited_result`,)
     VALUES (%s, %s, %s, %s)
     """
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute(sql, (request_id, user_id, result_text, edited_result))
+            cur.execute(sql, (
+                request_id, 
+                user_id, 
+                result_text, 
+            ))
             conn.commit()
     finally:
         conn.close()
+
 
 def fetch_latest_result(request_id: int) -> Optional[Dict[str, Any]]:
     """
@@ -70,5 +73,6 @@ def fetch_latest_result(request_id: int) -> Optional[Dict[str, Any]]:
             return row
     finally:
         conn.close()  # Close the connection after fetching results
+
 
 
