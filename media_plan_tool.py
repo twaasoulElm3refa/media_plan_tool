@@ -67,7 +67,9 @@ def media_plan(data, emergency_plan=False):
             {"role": "user", "content": new_data},
         ],
     )
-    return resp.choices[0].message.content
+    result =resp.choices[0].message.content
+    print("data is doooooooone ", result)
+    return result
 
 # =========================
 # 2) Config
@@ -177,5 +179,6 @@ def get_result(req: ResultRequest):
         return {"status": "processing"}
 
     return {"status": "done", "result": row["edited_result"] or row["result"]}
+
 
 
