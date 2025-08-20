@@ -66,32 +66,34 @@ def media_plan(data, emergency_plan=False):
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 # =========================
-# 3) Schemas (Pydantic v1)
+# 3) Schemas (Pydantic v2)
 # =========================
 class StartPayload(BaseModel):
     request_id: int = Field(..., description="ID created by WordPress insert")
     user_id: int
+
     organization_name: Optional[str] = None
     media_campaign_name: Optional[str] = None
     type_of_entity: Optional[str] = None
     target_sector: Optional[str] = None
-    target_age_start: Optional[int] = None
-    target_age_end: Optional[int] = None
+    target_age_start: Optional[int] = None  # nullable int
+    target_age_end: Optional[int] = None  # nullable int
     target_geographic_location: Optional[str] = None
     interests: Optional[str] = None
     goals: Optional[str] = None
     campaign_budget: Optional[str] = None
-    campaign_duration: Optional[str] = None
-    start_date: Optional[str] = None  # YYYY-MM-DD
-    end_date: Optional[str] = None
-    platforms: Optional[str] = None   # CSV from WP
+    campaign_duration: Optional[str] = None  # Should be a string (text)
+    start_date: Optional[str] = None  # Date as string (YYYY-MM-DD)
+    end_date: Optional[str] = None  # Date as string (YYYY-MM-DD)
+    platforms: Optional[str] = None  # String of platforms
     tone_of_speech: Optional[str] = None
     content_language: Optional[str] = None
-    visual_identity: Optional[int] = 0
-    is_there_a_prior_plan: Optional[int] = 0
-    sponsored_campaigns: Optional[int] = 0
-    emergency_plan: Optional[str] = 0
-
+    visual_identity: Optional[int] = 0  # tinyint(1), default 0
+    is_there_a_prior_plan: Optional[int] = 0  # tinyint(1), default 0
+    sponsored_campaigns: Optional[int] = 0  # tinyint(1), default 0
+    emergency_plan: Optional[int] = 0  # tinyint(1), default 0 (1 for true, 0 for false)
+    date: Optional[str] = None  # Date as string (YYYY-MM-DD)
+    
 class ResultRequest(BaseModel):
     request_id: int
 
@@ -99,6 +101,7 @@ class ApiStatus(BaseModel):
     status: str
     result: Optional[str] = None
     message: Optional[str] = None
+
 
 # =========================
 # 4) FastAPI app
@@ -178,3 +181,4 @@ def get_result(req: ResultRequest):
         return {"status": "processing"}
 
     return {"status": "done", "result": row["edited_result"] or row["result"]}
+
