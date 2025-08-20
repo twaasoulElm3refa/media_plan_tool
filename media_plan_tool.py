@@ -2,7 +2,6 @@ import os
 import json
 from typing import Optional
 from datetime import datetime
-
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -24,52 +23,41 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # 1) media_plan implementation (uses OpenAI)
 # =========================
 def media_plan(data, emergency_plan=False):
-    print(data)
-    if emergency_plan is False:
-        prompt = (
-            "أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.\n"
-            "قدّم خطة تتضمن: "
-            "1) الهدف الإعلامي، 2) الجمهور المستهدف، 3) الرسائل المفتاحية، "
-            "4) المنصات المقترحة، 5) أنواع المحتوى، 6) الجدول الزمني، "
-            "7) المؤشرات الرقمية المستهدفة، 8) الموازنة التقديرية، 9) التوصيات العامة."
-        )
-    else:
-        prompt = (
-            "أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.\n"
-            "قدّم خطة تتضمن: "
-            "1) الهدف الإعلامي، 2) الجمهور المستهدف، 3) الرسائل المفتاحية، "
-            "4) المنصات المقترحة، 5) أنواع المحتوى، 6) الجدول الزمني، "
-            "7) المؤشرات الرقمية المستهدفة، 8) الموازنة التقديرية، "
-            "9) التوصيات العامة، 10) خطة طوارئ أو إدارة أزمة."
-        )
+    """
+    Generate a media plan using OpenAI.
+    """
+    print("Received data for media plan:", data)
 
-    new_data = (
-        "أنشئ خطة إعلامية مدفوعة تفصيلية قابلة للتنفيذ بناءً على البيانات التالية:\n"
-        f"{data}\n\n"
-        "إلزامي تضمين:\n"
-        "- جدول Placement: Platform | Market | Section/Target | Language | Estimated Impressions | "
-        "Actual Net Cost | Demographics | Interests/Behaviors | Duration (أيام)\n"
-        "- Event Phasing: قبل/أثناء/بعد مع أهداف وميزانية لكل مرحلة\n"
-        "- LinkedIn Job Titles\n"
-        "- Channel-level Targets: Leads/Clicks/ROAS\n"
-        "- Geo + Language Split\n"
-        "- تضمين Google & TikTok ضمن funnel\n"
-        "- Ops Recommendations: Facebook–Instagram + WhatsApp Remarketing\n"
-        "- KPI by Channel: CPM/CTR/VTR/CPC/CPA/ROAS بأرقام مستهدفة\n"
-        "- 3D Budget Matrix: فئة × قناة × Funnel\n"
-        "- Cadence: مدة Placement + Creative Refresh كل 10–14 يوم\n"
-        "- Bidding Strategy: Lowest-Cost ثم Cost Cap\n"
+    # Define the prompt based on the plan
+    prompt = (
+        "أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.\n"
+        "قدّم خطة تتضمن: "
+        "1) الهدف الإعلامي، 2) الجمهور المستهدف، 3) الرسائل المفتاحية، "
+        "4) المنصات المقترحة، 5) أنواع المحتوى، 6) الجدول الزمني، "
+        "7) المؤشرات الرقمية المستهدفة، 8) الموازنة التقديرية، 9) التوصيات العامة."
+    ) if not emergency_plan else (
+        "أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.\n"
+        "قدّم خطة تتضمن: "
+        "1) الهدف الإعلامي، 2) الجمهور المستهدف، 3) الرسائل المفتاحية، "
+        "4) المنصات المقترحة، 5) أنواع المحتوى، 6) الجدول الزمني، "
+        "7) المؤشرات الرقمية المستهدفة، 8) الموازنة التقديرية، "
+        "9) التوصيات العامة، 10) خطة طوارئ أو إدارة أزمة."
     )
 
-    resp = client.chat.completions.create(
+    # Construct the new data that will be passed to OpenAI
+    new_data = f"أنشئ خطة إعلامية مدفوعة تفصيلية بناءً على البيانات التالية:\n{data}"
+
+    # Send the request to OpenAI API
+    response = client.chat.completions.create(
         model="gpt-4o",
         messages=[
             {"role": "system", "content": prompt},
             {"role": "user", "content": new_data},
         ],
     )
-    result =resp.choices[0].message.content
-    print("data is doooooooone ", result)
+
+    result = response.choices[0].message.content
+    print("Generated plan:", result)
     return result
 
 # =========================
@@ -83,7 +71,6 @@ ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 class StartPayload(BaseModel):
     request_id: int = Field(..., description="ID created by WordPress insert")
     user_id: int
-
     organization_name: Optional[str] = None
     media_campaign_name: Optional[str] = None
     type_of_entity: Optional[str] = None
@@ -130,20 +117,28 @@ app.add_middleware(
 # 5) Background processor
 # =========================
 def process_job(payload: StartPayload):
+    """
+    Run the media_plan function and save the result to the DB.
+    """
     try:
-        plan_text = media_plan(payload.model_dump(), emergency_plan=payload.emergency_plan)
+        # Call media_plan to get the result
+        plan_text = media_plan(payload.dict(), emergency_plan=payload.emergency_plan)
+
+        # If the result isn't a string, convert it into one
         if not isinstance(plan_text, str):
             plan_text = json.dumps(plan_text, ensure_ascii=False)
+        
+        # Save result in the database
         save_result(request_id=payload.request_id, user_id=payload.user_id, result_text=plan_text)
     except Exception as e:
         print("process_job error:", repr(e))
-
 
 # =========================
 # 6) Routes
 # =========================
 @app.on_event("startup")
 def startup():
+    # Ensure the database connection is made at startup
     get_db_connection()
 
 @app.get("/health")
@@ -153,34 +148,33 @@ def health():
 @app.post("/start", response_model=ApiStatus)
 def start_job(payload: StartPayload, bg: BackgroundTasks):
     """
-    Accepts WordPress payload + request_id.
-    Kicks off background processing and immediately returns 'processing'.
-    If already exists, returns 'done'.
+    Receives data from WordPress, processes it, and returns a status.
+    Starts the background task to process the media plan.
     """
     if payload.request_id <= 0 or payload.user_id <= 0:
         raise HTTPException(status_code=400, detail="request_id and user_id are required and must be > 0")
 
+    # Check if the result already exists for the request_id
     existing = fetch_latest_result(payload.request_id)
     if existing:
         return {"status": "done", "result": existing["edited_result"] or existing["result"]}
 
+    # If no existing result, start the background job to process the media plan
     bg.add_task(process_job, payload)
     return {"status": "processing"}
 
 @app.post("/result", response_model=ApiStatus)
 def get_result(req: ResultRequest):
     """
-    WordPress polls with {request_id}. Returns processing/done.
+    Allows WordPress to poll for the result of a job based on the request_id.
+    Returns 'processing' or 'done' status.
     """
     if req.request_id <= 0:
         raise HTTPException(status_code=400, detail="request_id is required and must be > 0")
 
+    # Fetch the latest result based on request_id
     row = fetch_latest_result(req.request_id)
     if not row:
         return {"status": "processing"}
 
     return {"status": "done", "result": row["edited_result"] or row["result"]}
-
-
-
-
