@@ -23,8 +23,8 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # =========================
 # 1) media_plan implementation (uses OpenAI)
 # =========================
-def media_plan(data, emergency_plan=None):
-    if emergency_plan is None:
+def media_plan(data, emergency_plan=False):
+    if emergency_plan is False:
         prompt = (
             "أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.\n"
             "قدّم خطة تتضمن: "
@@ -100,8 +100,7 @@ class StartPayload(BaseModel):
     visual_identity: Optional[int] = 0
     is_there_a_prior_plan: Optional[int] = 0
     sponsored_campaigns: Optional[int] = 0
-
-    emergency_plan: Optional[str] = None
+    emergency_plan: Optional[str] = 0
 
 class ResultRequest(BaseModel):
     request_id: int
@@ -127,18 +126,6 @@ app.add_middleware(
 # =========================
 # 5) Background processor
 # =========================
-'''def process_job(payload: StartPayload):
-    """
-    Run media_plan() then store into DB.
-    """
-    try:
-        # Pydantic v1:
-        plan_text = media_plan(payload.dict(), emergency_plan=payload.emergency_plan)
-        if not isinstance(plan_text, str):
-            plan_text = json.dumps(plan_text, ensure_ascii=False)
-        save_result(request_id=payload.request_id, user_id=payload.user_id, result_text=plan_text)
-    except Exception as e:
-        print("process_job error:", repr(e))'''
 def process_job(payload: StartPayload):
     try:
         plan_text = media_plan(payload.model_dump(), emergency_plan=payload.emergency_plan)
@@ -190,4 +177,5 @@ def get_result(req: ResultRequest):
         return {"status": "processing"}
 
     return {"status": "done", "result": row["edited_result"] or row["result"]}
+
 
