@@ -40,7 +40,7 @@ def media_plan(data, emergency_plan=False):
         8. الموازنة التقديرية (حسب خيارات المستخدم)
         9. التوصيات العامة (مثل: التعاون مع مؤثرين – حملات ممولة – تحسين البروفايل)
         ''' 
-    if not emergency_plan else:
+    if emergency_plan :
         prompt=f'''أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.
         1. الهدف الإعلامي
         2. الجمهور المستهدف
@@ -217,4 +217,5 @@ def get_result(req: ResultRequest):
         return {"status": "processing"}
 
     return {"status": "done", "result": row["edited_result"] or row["result"]}
+
 
