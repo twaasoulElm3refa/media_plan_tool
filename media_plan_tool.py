@@ -29,23 +29,59 @@ def media_plan(data, emergency_plan=False):
     print("Received data for media plan:", data)
 
     # Define the prompt based on the plan
-    prompt = (
-        "أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.\n"
-        "قدّم خطة تتضمن: "
-        "1) الهدف الإعلامي، 2) الجمهور المستهدف، 3) الرسائل المفتاحية، "
-        "4) المنصات المقترحة، 5) أنواع المحتوى، 6) الجدول الزمني، "
-        "7) المؤشرات الرقمية المستهدفة، 8) الموازنة التقديرية، 9) التوصيات العامة."
-    ) if not emergency_plan else (
-        "أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.\n"
-        "قدّم خطة تتضمن: "
-        "1) الهدف الإعلامي، 2) الجمهور المستهدف، 3) الرسائل المفتاحية، "
-        "4) المنصات المقترحة، 5) أنواع المحتوى، 6) الجدول الزمني، "
-        "7) المؤشرات الرقمية المستهدفة، 8) الموازنة التقديرية، "
-        "9) التوصيات العامة، 10) خطة طوارئ أو إدارة أزمة."
-    )
-
+    prompt =f'''أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.
+        1. الهدف الإعلامي
+        2. الجمهور المستهدف
+        3. الرسائل المفتاحية
+        4. المنصات المقترحة
+        5. أنواع المحتوى (منشورات – فيديو – إنفوجرافيك – تقارير – مقالات)
+        6. الجدول الزمني (تقسيم زمني واضح بالأسابيع أو الأشهر)
+        7. المؤشرات الرقمية المستهدفة (نسبة تفاعل، عدد زيارات، زيادة متابعين، إلخ)
+        8. الموازنة التقديرية (حسب خيارات المستخدم)
+        9. التوصيات العامة (مثل: التعاون مع مؤثرين – حملات ممولة – تحسين البروفايل)
+        ''' 
+    if not emergency_plan else:
+        prompt=f'''أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.
+        1. الهدف الإعلامي
+        2. الجمهور المستهدف
+        3. الرسائل المفتاحية
+        4. المنصات المقترحة
+        5. أنواع المحتوى (منشورات – فيديو – إنفوجرافيك – تقارير – مقالات)
+        6. الجدول الزمني (تقسيم زمني واضح بالأسابيع أو الأشهر)
+        7. المؤشرات الرقمية المستهدفة (نسبة تفاعل، عدد زيارات، زيادة متابعين، إلخ)
+        8. الموازنة التقديرية (حسب خيارات المستخدم)
+        9. التوصيات العامة (مثل: التعاون مع مؤثرين – حملات ممولة – تحسين البروفايل)
+        10. خطة طوارئ أو إدارة أزمة (اختياري)
+        '''
+    
     # Construct the new data that will be passed to OpenAI
-    new_data = f"أنشئ خطة إعلامية مدفوعة تفصيلية بناءً على البيانات التالية:\n{data}"
+    new_data = f'''أنشئ خطة إعلامية مدفوعة تفصيلية قابلة للتنفيذ بناءً على البيانات التالية :{data}
+    راعي هذه النقاط 
+        كيف تعزز الـ Prompt ليعالج هذه الفجوات:
+        عشان تخرج خطة مثل اللي تتصورها، لازم توضح في الـ Prompt أن المطلوب إلزاميًا يتضمن:
+    
+    جدول Placement كامل: Platform | Market (مدينة) | Section/Target | Language | Estimated Impressions | Actual Net Cost | Demographics | Interests/Behaviors | Duration (أيام).
+    
+    Event Phasing: (قبل / أثناء / بعد الحدث) مع أهداف وميزانية لكل مرحلة.
+    
+    LinkedIn Job Titles: أدرج 10–15 مسمى وظيفي.
+    
+    Channel-level Targets: Leads / Clicks / ROAS لكل قناة في مرحلة Conversion.
+    
+    Geo Split + Language Split: توزيع الميزانية حسب المدن واللغات.
+    
+    Google & TikTok: تضمينها كجزء من funnel strategy.
+    
+    Ops Recommendations: Facebook–Instagram integration + WhatsApp Remarketing.
+    
+    KPI by Channel: CPM / CTR / VTR / CPC / CPA / ROAS (قيم مستهدفة رقمية).
+    
+    3D Budget Matrix: (فئة × قناة × Funnel).
+    
+    Cadence: مدة Placement بالأيام + Creative Refresh كل 10–14 يوم.
+    
+    Bidding Strategy: Lowest-Cost كبداية ثم Cost Cap.
+    '''
 
     # Send the request to OpenAI API
     response = client.chat.completions.create(
@@ -181,3 +217,4 @@ def get_result(req: ResultRequest):
         return {"status": "processing"}
 
     return {"status": "done", "result": row["edited_result"] or row["result"]}
+
