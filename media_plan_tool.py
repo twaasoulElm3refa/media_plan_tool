@@ -215,7 +215,8 @@ def get_result(req: ResultRequest):
     row = fetch_latest_result(req.request_id)
     if not row:
         return {"status": "processing"}
-
-    return {"status": "done", "result": row["edited_result"] or row["result"]}
-
-
+        
+    #row["edited_result"] or row["result"]
+    edited_result = row[3] 
+    result = row[2]
+    return {"status": "done", "result": edited_result or result}
