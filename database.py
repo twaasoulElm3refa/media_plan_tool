@@ -61,7 +61,7 @@ def fetch_latest_result(request_id: int) -> Optional[Dict[str, Any]]:
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
-            cur = connection.cursor(dictionary=True) 
+            cur = conn.cursor(dictionary=True) 
             cur.execute(sql, (request_id,))
             row = cur.fetchone()
             print("Fetched result:", type(row))  # Debugging print
@@ -69,5 +69,6 @@ def fetch_latest_result(request_id: int) -> Optional[Dict[str, Any]]:
     finally:
         cur.close()
         conn.close()
+
 
 
