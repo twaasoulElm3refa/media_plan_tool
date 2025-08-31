@@ -29,6 +29,7 @@ def get_db_connection():
         )
         if connection.is_connected():
             print("✅ Connected!")
+            connection.autocommit = True
             return connection
     except Error as e:
         print("❌ Failed.")
@@ -60,10 +61,13 @@ def fetch_latest_result(request_id: int) -> Optional[Dict[str, Any]]:
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            cur = connection.cursor(dictionary=True) 
             cur.execute(sql, (request_id,))
             row = cur.fetchone()
             print("Fetched result:", type(row))  # Debugging print
             return row
     finally:
+        cur.close()
         conn.close()
+
 
