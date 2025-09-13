@@ -59,27 +59,16 @@ def media_plan(data, emergency_plan=False):
     راعي هذه النقاط 
         كيف تعزز الـ Prompt ليعالج هذه الفجوات:
         عشان تخرج خطة مثل اللي تتصورها، لازم توضح في الـ Prompt أن المطلوب إلزاميًا يتضمن:
-    
     جدول Placement كامل: Platform | Market (مدينة) | Section/Target | Language | Estimated Impressions | Actual Net Cost | Demographics | Interests/Behaviors | Duration (أيام).
-    
     Event Phasing: (قبل / أثناء / بعد الحدث) مع أهداف وميزانية لكل مرحلة.
-    
     LinkedIn Job Titles: أدرج 10–15 مسمى وظيفي.
-    
     Channel-level Targets: Leads / Clicks / ROAS لكل قناة في مرحلة Conversion.
-    
     Geo Split + Language Split: توزيع الميزانية حسب المدن واللغات.
-    
     Google & TikTok: تضمينها كجزء من funnel strategy.
-    
     Ops Recommendations: Facebook–Instagram integration + WhatsApp Remarketing.
-    
     KPI by Channel: CPM / CTR / VTR / CPC / CPA / ROAS (قيم مستهدفة رقمية).
-    
     3D Budget Matrix: (فئة × قناة × Funnel).
-    
     Cadence: مدة Placement بالأيام + Creative Refresh كل 10–14 يوم.
-    
     Bidding Strategy: Lowest-Cost كبداية ثم Cost Cap.
     '''
 
@@ -218,5 +207,6 @@ def get_result(req: ResultRequest):
  
     return {"status": "done", "result": row["edited_result"] or row["result"]
 }
+
 
 
