@@ -26,7 +26,7 @@ def media_plan(data, emergency_plan=False):
     """
     Generate a media plan using OpenAI.
     """
-    print("Received data for media plan:", data)
+    print("Received data for media plan: successfully ✅")
 
     # Define the prompt based on the plan
     prompt =f'''أنت خبير Paid Media Buying & Distribution لعلامات استهلاكية.
@@ -93,7 +93,7 @@ def media_plan(data, emergency_plan=False):
     )
 
     result = response.choices[0].message.content
-    print("Generated plan:", result)
+    print("Generated plan successfully ✅" )
     return result
 
 # =========================
@@ -218,4 +218,5 @@ def get_result(req: ResultRequest):
  
     return {"status": "done", "result": row["edited_result"] or row["result"]
 }
+
 
