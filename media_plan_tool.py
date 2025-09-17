@@ -146,20 +146,26 @@ app.add_middleware(
 # =========================
 def process_job(payload: StartPayload):
     """
+    1) Log and surface OpenAI/DB failures (don’t loop “processing” forever)
     Run the media_plan function and save the result to the DB.
     """
     try:
-        # Call media_plan to get the result
-        plan_text = media_plan(payload.dict(), emergency_plan=payload.emergency_plan)
-
-        # If the result isn't a string, convert it into one
+        plan_text = media_plan(payload.dict(), emergency_plan=bool(payload.emergency_plan))
         if not isinstance(plan_text, str):
             plan_text = json.dumps(plan_text, ensure_ascii=False)
-        
-        # Save result in the database
+
+        # Save result
         save_result(request_id=payload.request_id, user_id=payload.user_id, result_text=plan_text)
+        print(f"[JOB] saved result for #{payload.request_id} (len={len(plan_text)})")
+
     except Exception as e:
-        print("process_job error:", repr(e))
+        # <<< DO NOT SWALLOW: save an error marker so /result can report it
+        err = f"ERROR: {type(e).__name__}: {e}"
+        print("[JOB] OpenAI/processing failed:", err)
+        try:
+            save_result(request_id=payload.request_id, user_id=payload.user_id, result_text=err)
+        except Exception as e2:
+            print("[JOB] save_result also failed:", repr(e2))
 
 # =========================
 # 6) Routes
@@ -191,6 +197,29 @@ def start_job(payload: StartPayload, bg: BackgroundTasks):
     bg.add_task(process_job, payload)
     return {"status": "processing"}
 
+@app.post("/start_sync", response_model=ApiStatus)
+def start_job_sync(payload: StartPayload):
+    if payload.request_id <= 0 or payload.user_id <= 0:
+        raise HTTPException(status_code=400, detail="request_id and user_id must be > 0")
+
+    try:
+        existing = fetch_latest_result(payload.request_id)
+        if existing:
+            return {"status": "done", "result": existing["edited_result"] or existing["result"]}
+
+        plan_text = media_plan(payload.dict(), emergency_plan=bool(payload.emergency_plan))
+        if not isinstance(plan_text, str):
+            plan_text = json.dumps(plan_text, ensure_ascii=False)
+
+        # Persist (be explicit with kwargs for readability)
+        save_result(request_id=payload.request_id, user_id=payload.user_id, result_text=plan_text)
+
+        return {"status": "done", "result": plan_text}
+
+    except Exception as e:
+        # log the full stack in server logs if you have logging set up
+        return {"status": "error", "message": f"{type(e).__name__}: {e}"}
+
 @app.post("/result", response_model=ApiStatus)
 def get_result(req: ResultRequest):
     """
@@ -200,13 +229,12 @@ def get_result(req: ResultRequest):
     if req.request_id <= 0:
         raise HTTPException(status_code=400, detail="request_id is required and must be > 0")
 
-    # Fetch the latest result based on request_id
     row = fetch_latest_result(req.request_id)
     if not row:
         return {"status": "processing"}
- 
-    return {"status": "done", "result": row["edited_result"] or row["result"]
-}
 
+    text = row["edited_result"] or row["result"] or ""
+    if text.startswith("ERROR:"):
+        return {"status": "error", "message": text}   # <-- WordPress can show a friendly message
 
-
+    return {"status":"done","result":text}
