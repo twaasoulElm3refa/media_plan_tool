@@ -15,8 +15,8 @@ db_host = os.getenv("DB_HOST")
 db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
 db_port = os.getenv("DB_PORT")
-DATA_TABLE ="wpl3_media_plan_tool"
-RESULTS_TABLE = "wpl3_media_plan_result"
+DATA_TABLE ="A11i_media_plan_tool"
+RESULTS_TABLE = "A11i_media_plan_result"
 
 def get_db_connection():
     try:
@@ -69,6 +69,7 @@ def fetch_latest_result(request_id: int) -> Optional[Dict[str, Any]]:
     finally:
         cur.close()
         conn.close()
+
 
 
 
